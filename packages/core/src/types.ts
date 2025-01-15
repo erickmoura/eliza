@@ -701,6 +701,9 @@ export type Character = {
     /** Character name */
     name: string;
 
+    /** Optional Telegram token */
+    telegramToken?: string;
+
     /** Optional username */
     username?: string;
 
