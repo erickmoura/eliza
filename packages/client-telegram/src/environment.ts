@@ -13,6 +13,7 @@ export async function validateTelegramConfig(
     try {
         const config = {
             TELEGRAM_BOT_TOKEN:
+                runtime.character.telegramToken ||
                 runtime.getSetting("TELEGRAM_BOT_TOKEN") ||
                 process.env.TELEGRAM_BOT_TOKEN,
         };

@@ -9,7 +9,8 @@ export const TelegramClientInterface: Client = {
 
         const tg = new TelegramClient(
             runtime,
-            runtime.getSetting("TELEGRAM_BOT_TOKEN")
+            runtime.character.telegramToken
++            //runtime.getSetting("TELEGRAM_BOT_TOKEN")
         );
 
         await tg.start();
