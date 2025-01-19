@@ -163,42 +163,43 @@ export class ClientBase extends EventEmitter {
         let retries = this.twitterConfig.TWITTER_RETRY_LIMIT;
         const twitter2faSecret = this.twitterConfig.TWITTER_2FA_SECRET;
 
+        const cookies = this.runtime.getSetting("TWITTER_COOKIES");
+
         if (!username) {
             throw new Error("Twitter username not configured");
         }
 
-        const cachedCookies = await this.getCachedCookies(username);
+        // Check for Twitter cookies
+        if (cookies) {
+            elizaLogger.debug("Using cookies from settings");
+            const cookiesArray = JSON.parse(cookies);
 
-        if (cachedCookies) {
-            elizaLogger.info("Using cached cookies");
-            await this.setCookiesFromArray(cachedCookies);
+            await this.setCookiesFromArray(cookiesArray);
+        } else {
+            elizaLogger.debug("No cookies found in settings");
+            elizaLogger.debug("Checking for cached cookies");
+            const cachedCookies = await this.getCachedCookies(username);
+            if (cachedCookies) {
+                await this.setCookiesFromArray(cachedCookies);
+            }
         }
 
         elizaLogger.log("Waiting for Twitter login");
         while (retries > 0) {
+            const cookies = await this.twitterClient.getCookies();
+            if ((await this.twitterClient.isLoggedIn()) && !!cookies) {
+                elizaLogger.info("Already logged in.");
+                await this.cacheCookies(username, cookies);
+                elizaLogger.info("Successfully logged in and cookies cached.");
+                break;
+            }
             try {
-                if (await this.twitterClient.isLoggedIn()) {
-                    // cookies are valid, no login required
-                    elizaLogger.info("Successfully logged in.");
-                    break;
-                } else {
                     await this.twitterClient.login(
                         username,
                         password,
                         email,
                         twitter2faSecret
                     );
-                    if (await this.twitterClient.isLoggedIn()) {
-                        // fresh login, store new cookies
-                        elizaLogger.info("Successfully logged in.");
-                        elizaLogger.info("Caching cookies");
-                        await this.cacheCookies(
-                            username,
-                            await this.twitterClient.getCookies()
-                        );
-                        break;
-                    }
-                }
             } catch (error) {
                 elizaLogger.error(`Login attempt failed: ${error.message}`);
             }
